@@ -1,0 +1,22 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+  <f:entry title="Write Console Log to Workspace" field="writeConsoleLog"
+    description="Check if we should write the Console Log to the Build's Workspace.">
+    <f:checkbox />
+  </f:entry>
+  <f:entry title="Wait for all Console output before writing file." field="blockOnAllOutput"
+    description="Check if we should wait for all content to be logged before logging the Console Log to the Build's Workspace.">
+    <f:checkbox />
+  </f:entry>
+  <!--
+    Creates a text field that shows the value of the "fileName" property.
+    When submitted, it will be passed to the corresponding constructor parameter.
+  -->
+  <f:entry title="File Name" field="fileName">
+    <f:textbox />
+  </f:entry>
+</j:jelly>
