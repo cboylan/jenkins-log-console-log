@@ -32,7 +32,7 @@ import javax.servlet.ServletException;
  *
  * <p>
  * When a publisher is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
- * method will be invoked. 
+ * method will be invoked.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -84,10 +84,8 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
                 workspace = build.getWorkspace();
                 outFile = workspace.child(fileName);
                 os = outFile.write();
-                // AbstractBuild.writeWholeLogTo is not available in older
-                // versions of jenkins.
-                //build.writeWholeLogTo(os);
                 writeLogFile(build, os, blockOnAllOutput);
+                os.close();
             }
         } catch (IOException e) {
             build.setResult(Result.UNSTABLE);
@@ -99,15 +97,18 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
 
     private void writeLogFile(AbstractBuild build, OutputStream out, boolean block)
             throws IOException, InterruptedException {
-        long pos = 0; 
+        long pos = 0;
+        long prevPos = pos;
         AnnotatedLargeText logText;
         logText = build.getLogText();
-        pos = logText.writeLogTo(pos, out);
-        // When blockOnAllOutput is working you want to do something like:
-        //do { 
-        //    logText = build.getLogText();
-        //    pos = logText.writeLogTo(pos, out);
-        //} while (block && !logText.isComplete());
+        do {
+            prevPos = pos;
+            pos = logText.writeLogTo(pos, out);
+            if (prevPos >= pos) { // Nothing new has been written
+                break;
+            }
+            Thread.sleep(1000);
+        } while(true);
     }
 
     // Overridden for better type safety.
@@ -151,7 +152,7 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            // Indicates that this builder can be used with all kinds of project types 
+            // Indicates that this builder can be used with all kinds of project types
             return true;
         }
 
