@@ -4,7 +4,7 @@
 
     See global.jelly for a general discussion about jelly script.
   -->
-  <f:entry title="Write Console Log to Workspace" field="writeConsoleLog"
+  <f:entry title="Write Console Log to AWS CloudWatch Logs" field="writeConsoleLog"
     description="Check if we should write the Console Log to the Build's Workspace.">
     <f:checkbox />
   </f:entry>

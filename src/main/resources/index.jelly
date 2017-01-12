@@ -2,5 +2,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  This plugin will write the console log of a build to its workspace.
+  This plugin will write the build log to AWS CloudWatch Logs.
 </div>

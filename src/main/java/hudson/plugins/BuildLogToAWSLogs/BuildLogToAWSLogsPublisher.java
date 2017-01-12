@@ -1,7 +1,10 @@
-package hudson.plugins.ConsoleLogToWorkspace;
+package hudson.plugins.BuildLogToAWSLogs;
 
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
+import com.amazonaws.services.logs.model.InputLogEvent;
+import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.AbstractBuild;
@@ -13,30 +16,31 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.io.IOException;
-import java.io.File;
-import java.io.OutputStream;
 import javax.servlet.ServletException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Sample {@link Publisher}.
- *
+ * <p>
  * <p>
  * When the user configures the project and enables this publisher,
  * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked
- * and a new {@link ConsoleLogToWorkspacePublisher} is created.
- *
+ * and a new {@link BuildLogToAWSLogsPublisher} is created.
+ * <p>
  * <p>
  * When a publisher is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
  * method will be invoked.
  *
  * @author Kohsuke Kawaguchi
  */
-public class ConsoleLogToWorkspacePublisher extends Recorder {
+public class BuildLogToAWSLogsPublisher extends Recorder {
 
     private final String fileName;
     private final boolean writeConsoleLog;
@@ -44,7 +48,7 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public ConsoleLogToWorkspacePublisher(String fileName, boolean writeConsoleLog, boolean blockOnAllOutput) {
+    public BuildLogToAWSLogsPublisher(String fileName, boolean writeConsoleLog, boolean blockOnAllOutput) {
         this.fileName = fileName;
         this.writeConsoleLog = writeConsoleLog;
         //Currently the blocking on other output is broken.
@@ -75,40 +79,39 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
      */
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        final FilePath workspace;
-        final FilePath outFile;
-        final File f;
-        final OutputStream os;
+
+        if (!writeConsoleLog) return true;
+
+        AWSLogs awsLogs = AWSLogsClientBuilder.standard().build();
+
+
         try {
-            if (writeConsoleLog) {
-                workspace = build.getWorkspace();
-                outFile = workspace.child(fileName);
-                os = outFile.write();
-                writeLogFile(build, os, blockOnAllOutput);
-                os.close();
-            }
-        } catch (IOException e) {
-            build.setResult(Result.UNSTABLE);
-        } catch (InterruptedException e) {
+            writeLogFile(build, awsLogs, blockOnAllOutput);
+
+        } catch (IOException | InterruptedException e) {
             build.setResult(Result.UNSTABLE);
         }
         return true;
     }
 
-    private void writeLogFile(AbstractBuild build, OutputStream out, boolean block)
+    private void writeLogFile(AbstractBuild build, AWSLogs awsLogs, boolean block)
             throws IOException, InterruptedException {
-        long pos = 0;
-        long prevPos = pos;
-        AnnotatedLargeText logText;
-        logText = build.getLogText();
-        do {
-            prevPos = pos;
-            pos = logText.writeLogTo(pos, out);
-            if (prevPos >= pos) { // Nothing new has been written
-                break;
-            }
-            Thread.sleep(1000);
-        } while(true);
+
+        AnnotatedLargeText logText = build.getLogText();
+        BufferedReader reader = new BufferedReader(logText.readAll());
+        String line;
+
+        int count = 0;
+
+        List<InputLogEvent> list = new ArrayList<>();
+        while ((line = reader.readLine()) != null) {
+            Long timestamp = new Date().getTime();
+            list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
+        }
+
+        PutLogEventsRequest req = new PutLogEventsRequest("/jenkins/jobs", build.getId() + "/" + build.getNumber(), list);
+        awsLogs.putLogEvents(req);
+
     }
 
     // Overridden for better type safety.
@@ -116,15 +119,15 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
     // you don't have to do this.
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     /**
-     * Descriptor for {@link ConsoleLogToWorkspacePublisher}. Used as a singleton.
+     * Descriptor for {@link BuildLogToAWSLogsPublisher}. Used as a singleton.
      * The class is marked as public so that it can be accessed from views.
-     *
      * <p>
-     * See <tt>src/main/resources/hudson/plugins/ConsoleLogToWorkspace/ConsoleLogToWorkspacePublisher/*.jelly</tt>
+     * <p>
+     * See <tt>src/main/resources/hudson/plugins/BuildLogToAWSLogs/BuildLogToAWSLogsPublisher/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
@@ -133,16 +136,14 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Write Console Log to Workspace";
+            return "Write build log to AWS CloudWatch Logs";
         }
 
         /**
          * Performs on-the-fly validation of the form field 'name'.
          *
-         * @param value
-         *      This parameter receives the value that the user has typed.
-         * @return
-         *      Indicates the outcome of the validation. This is sent to the browser.
+         * @param value This parameter receives the value that the user has typed.
+         * @return Indicates the outcome of the validation. This is sent to the browser.
          */
         public FormValidation doCheckFileName(@QueryParameter String value)
                 throws IOException, ServletException {
