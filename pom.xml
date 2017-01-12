@@ -7,7 +7,7 @@
   </parent>
 
   <groupId>hudson.plugins.ConsoleLogToWorkspace</groupId>
-  <artifactId>build-log-to-aws-logs</artifactId>
+  <artifactId>aws-logs-publisher</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
@@ -49,6 +49,13 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-logs</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>timestamper</artifactId>
+      <version>1.8.7</version>
+      <optional>true</optional>
     </dependency>
 
   </dependencies>

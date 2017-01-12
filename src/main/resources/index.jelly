@@ -1,6 +1,7 @@
+<?jelly escape-by-default='true'?>
 <!--
   This view is used to render the installed plugins page.
 -->
 <div>
-  This plugin will write the build log to AWS CloudWatch Logs.
+  Writes build logs to AWS CloudWatch Logs.
 </div>

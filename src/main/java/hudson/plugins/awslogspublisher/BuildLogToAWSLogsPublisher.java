@@ -1,7 +1,10 @@
-package hudson.plugins.BuildLogToAWSLogs;
+package hudson.plugins.awslogspublisher;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
+import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import hudson.Extension;
@@ -26,52 +29,22 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+
 /**
- * Sample {@link Publisher}.
- * <p>
- * <p>
- * When the user configures the project and enables this publisher,
- * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked
- * and a new {@link BuildLogToAWSLogsPublisher} is created.
- * <p>
- * <p>
  * When a publisher is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
  * method will be invoked.
  *
- * @author Kohsuke Kawaguchi
+ * @author Elifarley Cruz
  */
 public class BuildLogToAWSLogsPublisher extends Recorder {
 
-    private final String fileName;
-    private final boolean writeConsoleLog;
-    private final boolean blockOnAllOutput;
-
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public BuildLogToAWSLogsPublisher(String fileName, boolean writeConsoleLog, boolean blockOnAllOutput) {
-        this.fileName = fileName;
-        this.writeConsoleLog = writeConsoleLog;
-        //Currently the blocking on other output is broken.
-        this.blockOnAllOutput = blockOnAllOutput;
+    public BuildLogToAWSLogsPublisher() {
     }
 
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.BUILD;
-    }
-
-    /**
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
-    public String getFileName() {
-        return fileName;
-    }
-
-    public boolean getWriteConsoleLog() {
-        return writeConsoleLog;
-    }
-
-    public boolean getBlockOnAllOutput() {
-        return blockOnAllOutput;
     }
 
     /**
@@ -80,13 +53,31 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
 
-        if (!writeConsoleLog) return true;
+        //if (!writeConsoleLog) return true;
 
-        AWSLogs awsLogs = AWSLogsClientBuilder.standard().build();
+        final BuildLogToAWSLogsConfig config = BuildLogToAWSLogsConfig.get();
+
+        AWSCredentials credentials = new AWSCredentials() {
+
+            @Override
+            public String getAWSAccessKeyId() {
+                return config.getAwsAccessKeyId();
+            }
+
+            @Override
+            public String getAWSSecretKey() {
+                return config.getAwsSecretKey();
+            }
+        };
+
+        AWSLogs awsLogs = AWSLogsClientBuilder.standard().
+                withRegion(config.getAwsRegion()).
+                withCredentials(new StaticCredentialsProvider(credentials)).
+                build();
 
 
         try {
-            writeLogFile(build, awsLogs, blockOnAllOutput);
+            pushToAWSLogs(build, awsLogs, config.getLogGroupName());
 
         } catch (IOException | InterruptedException e) {
             build.setResult(Result.UNSTABLE);
@@ -94,22 +85,33 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
         return true;
     }
 
-    private void writeLogFile(AbstractBuild build, AWSLogs awsLogs, boolean block)
+    private void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName)
             throws IOException, InterruptedException {
-
-        AnnotatedLargeText logText = build.getLogText();
-        BufferedReader reader = new BufferedReader(logText.readAll());
-        String line;
 
         int count = 0;
 
         List<InputLogEvent> list = new ArrayList<>();
+        String line;
+
+        AnnotatedLargeText logText = build.getLogText();
+        BufferedReader reader = new BufferedReader(logText.readAll());
+
+/*
+        String query = "time=HH:mm:ss";
+        try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
+            // read timestamps here
+        }
+*/
+
         while ((line = reader.readLine()) != null) {
             Long timestamp = new Date().getTime();
             list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
         }
 
-        PutLogEventsRequest req = new PutLogEventsRequest("/jenkins/jobs", build.getId() + "/" + build.getNumber(), list);
+        String logStreamName = build.getProject().getName() + "/" + build.getNumber();
+
+        awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
+        PutLogEventsRequest req = new PutLogEventsRequest(logGroupName, logStreamName, list);
         awsLogs.putLogEvents(req);
 
     }
@@ -127,7 +129,7 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
      * The class is marked as public so that it can be accessed from views.
      * <p>
      * <p>
-     * See <tt>src/main/resources/hudson/plugins/BuildLogToAWSLogs/BuildLogToAWSLogsPublisher/*.jelly</tt>
+     * See <tt>src/main/resources/hudson/plugins/awslogspublisher/BuildLogToAWSLogsPublisher/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
@@ -136,7 +138,7 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Write build log to AWS CloudWatch Logs";
+            return "AWS Logs Publisher";
         }
 
         /**
