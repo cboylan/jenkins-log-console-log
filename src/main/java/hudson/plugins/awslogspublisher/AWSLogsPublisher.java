@@ -7,13 +7,14 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
+import com.amazonaws.services.logs.model.PutLogEventsResult;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.console.AnnotatedLargeText;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.plugins.timestamper.api.TimestamperAPI;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -88,31 +89,26 @@ public class AWSLogsPublisher extends Recorder {
     private void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName)
             throws IOException, InterruptedException {
 
-        int count = 0;
-
-        List<InputLogEvent> list = new ArrayList<>();
-        String line;
-
-        AnnotatedLargeText logText = build.getLogText();
-        BufferedReader reader = new BufferedReader(logText.readAll());
-
-/*
-        String query = "time=HH:mm:ss";
-        try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
-            // read timestamps here
-        }
-*/
-
-        while ((line = reader.readLine()) != null) {
-            Long timestamp = new Date().getTime();
-            list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
-        }
-
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
-
         awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
-        PutLogEventsRequest req = new PutLogEventsRequest(logGroupName, logStreamName, list);
-        awsLogs.putLogEvents(req);
+
+        String query = "time=HH:mm:ss&appendLog";
+        try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
+
+            List<InputLogEvent> list = new ArrayList<>();
+            String line;
+            // TODO Max 10k lines]
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                Long timestamp = new Date().getTime();
+                list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
+            }
+
+            PutLogEventsResult logEventsResult = awsLogs.putLogEvents(new PutLogEventsRequest(logGroupName, logStreamName, list));
+            String nextSequenceToken = logEventsResult.getNextSequenceToken();
+
+        }
+
 
     }
 
