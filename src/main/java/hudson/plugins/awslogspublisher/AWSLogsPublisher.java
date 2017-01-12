@@ -26,9 +26,11 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.servlet.ServletException;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 
 /**
@@ -92,21 +94,27 @@ public class AWSLogsPublisher extends Recorder {
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
         awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
-        String query = "time=HH:mm:ss&appendLog";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        String query = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
         try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
 
             List<InputLogEvent> list = new ArrayList<>();
             String line;
-            // TODO Max 10k lines]
+            // TODO Max 10k lines
             int count = 0;
             while ((line = reader.readLine()) != null) {
-                Long timestamp = new Date().getTime();
+                Long timestamp = dateFormat.parse(line.substring(0, 19)).getTime();
+                line = line.substring(21);
                 list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
             }
 
             PutLogEventsResult logEventsResult = awsLogs.putLogEvents(new PutLogEventsRequest(logGroupName, logStreamName, list));
             String nextSequenceToken = logEventsResult.getNextSequenceToken();
 
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
 
 
