@@ -42,7 +42,7 @@ import javax.annotation.CheckForNull;
  * @author Elifarley Cruz
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES)
-public final class BuildLogToAWSLogsConfig extends GlobalConfiguration {
+public final class AWSLogsConfig extends GlobalConfiguration {
 
     public static final String DEFAULT_LOG_GROUP = "/jenkins/jobs";
 
@@ -50,7 +50,7 @@ public final class BuildLogToAWSLogsConfig extends GlobalConfiguration {
      * @return the AWS Logs Publisher configuration, or {@code null} if Jenkins has been
      * shut down
      */
-    public static BuildLogToAWSLogsConfig get() {
+    public static AWSLogsConfig get() {
 
         Jenkins jenkins = Jenkins.getInstance();
 
@@ -58,8 +58,8 @@ public final class BuildLogToAWSLogsConfig extends GlobalConfiguration {
             return null;
         }
 
-        BuildLogToAWSLogsConfig config = jenkins
-                .getDescriptorByType(BuildLogToAWSLogsConfig.class);
+        AWSLogsConfig config = jenkins
+                .getDescriptorByType(AWSLogsConfig.class);
 
         return config;
 
@@ -77,7 +77,7 @@ public final class BuildLogToAWSLogsConfig extends GlobalConfiguration {
     @CheckForNull
     private String logGroupName;
 
-    public BuildLogToAWSLogsConfig() {
+    public AWSLogsConfig() {
         load();
     }
 
@@ -106,7 +106,7 @@ public final class BuildLogToAWSLogsConfig extends GlobalConfiguration {
     }
 
     public String getLogGroupName() {
-        if (Strings.isNullOrEmpty(logGroupName)) return BuildLogToAWSLogsConfig.DEFAULT_LOG_GROUP;
+        if (Strings.isNullOrEmpty(logGroupName)) return AWSLogsConfig.DEFAULT_LOG_GROUP;
         return logGroupName;
     }
 

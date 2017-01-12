@@ -36,11 +36,11 @@ import java.util.List;
  *
  * @author Elifarley Cruz
  */
-public class BuildLogToAWSLogsPublisher extends Recorder {
+public class AWSLogsPublisher extends Recorder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public BuildLogToAWSLogsPublisher() {
+    public AWSLogsPublisher() {
     }
 
     public BuildStepMonitor getRequiredMonitorService() {
@@ -55,7 +55,7 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
 
         //if (!writeConsoleLog) return true;
 
-        final BuildLogToAWSLogsConfig config = BuildLogToAWSLogsConfig.get();
+        final AWSLogsConfig config = AWSLogsConfig.get();
 
         AWSCredentials credentials = new AWSCredentials() {
 
@@ -125,11 +125,11 @@ public class BuildLogToAWSLogsPublisher extends Recorder {
     }
 
     /**
-     * Descriptor for {@link BuildLogToAWSLogsPublisher}. Used as a singleton.
+     * Descriptor for {@link AWSLogsPublisher}. Used as a singleton.
      * The class is marked as public so that it can be accessed from views.
      * <p>
      * <p>
-     * See <tt>src/main/resources/hudson/plugins/awslogspublisher/BuildLogToAWSLogsPublisher/*.jelly</tt>
+     * See <tt>src/main/resources/hudson/plugins/awslogspublisher/AWSLogsPublisher/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
