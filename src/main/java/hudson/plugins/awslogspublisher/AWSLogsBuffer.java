@@ -40,7 +40,13 @@ public final class AWSLogsBuffer implements Closeable {
     }
 
     public void add(String msg, Long timestamp) {
+
+        if (msg == null || msg.length() == 0) {
+            return;
+        }
+
         list.add(new InputLogEvent().withTimestamp(timestamp).withMessage(msg));
+
         if (++currentLogEventCount >= MAX_LOG_EVENTS_IN_BATCH) {
             send();
         }

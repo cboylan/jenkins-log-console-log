@@ -85,7 +85,7 @@ public final class AWSLogsHelper {
                     line = line.substring(matcher.end() + 2);
 
                 } else {
-                    if (count > 50) {
+                    if (count > 100) {
                         timestamp = System.currentTimeMillis();
                         count = 0;
                     }
