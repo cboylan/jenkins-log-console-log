@@ -68,7 +68,7 @@ public class AWSLogsPublisher extends Recorder {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "AWS Logs Publisher";
+            return "AWS CloudWatch Logs Publisher";
         }
 
         /**
@@ -80,7 +80,7 @@ public class AWSLogsPublisher extends Recorder {
         public FormValidation doCheckFileName(@QueryParameter String value)
                 throws IOException, ServletException {
             if (value.length() == 0)
-                return FormValidation.error("Please set an output file name");
+                return FormValidation.error("Please set a name");
             return FormValidation.ok();
         }
 

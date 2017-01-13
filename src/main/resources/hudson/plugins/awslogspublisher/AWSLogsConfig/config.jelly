@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2016 Elifarley Cruz
+Copyright (c) 2017 Elifarley Cruz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-  <f:section title="${%AWS Logs Publisher}">
+  <f:section title="${%AWS CloudWatch Logs Publisher}">
     <f:entry title="${%AWS Access Key ID}" field="awsAccessKeyId">
       <f:textbox/>
     </f:entry>
