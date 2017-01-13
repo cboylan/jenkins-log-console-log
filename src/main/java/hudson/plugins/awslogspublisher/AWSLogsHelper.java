@@ -19,6 +19,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by elifarley on 13/01/17.
@@ -66,6 +68,8 @@ public final class AWSLogsHelper {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+        Pattern dtPattern = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
+
         String query = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
         try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
 
@@ -73,10 +77,26 @@ public final class AWSLogsHelper {
             String line;
             // TODO Max 10k lines
             int count = 0;
+            Long timestamp = System.currentTimeMillis();
             while ((line = reader.readLine()) != null) {
-                Long timestamp = dateFormat.parse(line.substring(0, 19)).getTime();
-                line = line.substring(21);
-                list.add(new InputLogEvent().withMessage(line).withTimestamp(timestamp));
+
+
+                Matcher matcher = dtPattern.matcher(line);
+                if (matcher.find()) {
+                    timestamp = dateFormat.parse(line.substring(0, matcher.end())).getTime();
+                    line = line.substring(matcher.end() + 2);
+
+                } else {
+                    if (count > 50) {
+                        timestamp = System.currentTimeMillis();
+                    }
+                    line = line.trim();
+
+                }
+
+                list.add(new InputLogEvent().withTimestamp(timestamp).withMessage(line));
+                count++;
+
             }
 
             PutLogEventsResult logEventsResult = awsLogs.putLogEvents(new PutLogEventsRequest(logGroupName, logStreamName, list));
