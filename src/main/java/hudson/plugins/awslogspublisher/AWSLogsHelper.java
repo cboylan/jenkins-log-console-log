@@ -81,7 +81,6 @@ public final class AWSLogsHelper {
             Long timestamp = System.currentTimeMillis();
             while ((line = reader.readLine()) != null) {
 
-
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
                     timestamp = DATE_FORMAT.parse(line.substring(0, matcher.end())).getTime();
