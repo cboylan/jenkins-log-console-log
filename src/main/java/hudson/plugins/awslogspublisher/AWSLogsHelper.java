@@ -5,20 +5,15 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
-import com.amazonaws.services.logs.model.InputLogEvent;
-import com.amazonaws.services.logs.model.PutLogEventsRequest;
-import com.amazonaws.services.logs.model.PutLogEventsResult;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.plugins.timestamper.api.TimestamperAPI;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.TimeZone;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +21,8 @@ import java.util.regex.Pattern;
  * Created by elifarley on 13/01/17.
  */
 public final class AWSLogsHelper {
+
+    private static final Logger LOGGER = Logger.getLogger(AWSLogsHelper.class.getName());
 
     private static final String QUERY = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
     private static final Pattern PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
@@ -70,16 +67,17 @@ public final class AWSLogsHelper {
             throws IOException, InterruptedException {
 
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
+        LOGGER.info("AWS Logs group name : " + logGroupName);
+        LOGGER.info("AWS Logs stream name: " + logStreamName);
+
         awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
-        try (BufferedReader reader = TimestamperAPI.get().read(build, QUERY)) {
+        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName)) {
 
-            List<InputLogEvent> list = new ArrayList<>();
             String line;
-            // TODO Max 10k lines
             int count = 0;
             Long timestamp = System.currentTimeMillis();
-            while ((line = reader.readLine()) != null) {
+            while ((line = buffer.readLine()) != null) {
 
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
@@ -89,18 +87,16 @@ public final class AWSLogsHelper {
                 } else {
                     if (count > 50) {
                         timestamp = System.currentTimeMillis();
+                        count = 0;
                     }
                     line = line.trim();
 
                 }
 
-                list.add(new InputLogEvent().withTimestamp(timestamp).withMessage(line));
+                buffer.add(line, timestamp);
                 count++;
 
             }
-
-            PutLogEventsResult logEventsResult = awsLogs.putLogEvents(new PutLogEventsRequest(logGroupName, logStreamName, list));
-            String nextSequenceToken = logEventsResult.getNextSequenceToken();
 
         } catch (ParseException e) {
             throw new RuntimeException(e);
