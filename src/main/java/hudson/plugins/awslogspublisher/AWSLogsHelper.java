@@ -27,6 +27,13 @@ import java.util.regex.Pattern;
  */
 public final class AWSLogsHelper {
 
+    private static final String QUERY = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
+    private static final Pattern PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
+    static {
+        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
     static void publish(AbstractBuild build, final AWSLogsConfig config) {
 
 
@@ -65,13 +72,7 @@ public final class AWSLogsHelper {
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
         awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-        Pattern dtPattern = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
-
-        String query = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
-        try (BufferedReader reader = TimestamperAPI.get().read(build, query)) {
+        try (BufferedReader reader = TimestamperAPI.get().read(build, QUERY)) {
 
             List<InputLogEvent> list = new ArrayList<>();
             String line;
@@ -81,9 +82,9 @@ public final class AWSLogsHelper {
             while ((line = reader.readLine()) != null) {
 
 
-                Matcher matcher = dtPattern.matcher(line);
+                Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
-                    timestamp = dateFormat.parse(line.substring(0, matcher.end())).getTime();
+                    timestamp = DATE_FORMAT.parse(line.substring(0, matcher.end())).getTime();
                     line = line.substring(matcher.end() + 2);
 
                 } else {
