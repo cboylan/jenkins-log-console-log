@@ -51,12 +51,6 @@
   <dependencies>
 
     <dependency>
-      <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-          <version>20.0</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-logs</artifactId>
     </dependency>
