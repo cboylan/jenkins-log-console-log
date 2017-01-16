@@ -6,11 +6,12 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.plugins.timestamper.api.TimestamperAPI;
 
 import java.io.IOException;
-import java.text.ParseException;
+import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.logging.Logger;
@@ -31,11 +32,10 @@ public final class AWSLogsHelper {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    static void publish(AbstractBuild build, final AWSLogsConfig config) {
-
+    static void publish(AbstractBuild build, final AWSLogsConfig config, BuildListener listener) {
 
         try {
-            pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName());
+            pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), listener);
 
         } catch (IOException | InterruptedException e) {
             build.setResult(Result.UNSTABLE);
@@ -63,16 +63,28 @@ public final class AWSLogsHelper {
                 build();
     }
 
-    private static void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName)
+    private static void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, BuildListener listener)
             throws IOException, InterruptedException {
 
+        PrintStream logger = listener.getLogger();
+
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
-        LOGGER.info("AWS Logs group name : " + logGroupName);
-        LOGGER.info("AWS Logs stream name: " + logStreamName);
+        {
+            String listenerLogMsg = String.format("[AWS Logs] Creating log stream '%s:%s'...", logGroupName, logStreamName);
+            LOGGER.info(listenerLogMsg);
+        }
 
-        awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
+        try {
+            awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
-        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName)) {
+        } catch (Exception e) {
+            String errorMsg = String.format("Unable to create log stream '%s' in log group '%s' (%s)",logStreamName, logGroupName, e.toString());
+            LOGGER.warning(errorMsg);
+            e.printStackTrace(listener.error(errorMsg));
+            throw new RuntimeException(errorMsg, e);
+        }
+
+        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger)) {
 
             String line;
             int count = 0;
@@ -98,7 +110,9 @@ public final class AWSLogsHelper {
 
             }
 
-        } catch (ParseException e) {
+        } catch (Exception e) {
+            LOGGER.warning(e.toString());
+            e.printStackTrace(listener.error(e.toString()));
             throw new RuntimeException(e);
         }
 

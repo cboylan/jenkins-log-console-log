@@ -4,10 +4,7 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -37,17 +34,19 @@ public final class AWSLogsBuffer implements Closeable {
     private final String logGroupName;
     private final String logStreamName;
     private final List<InputLogEvent> list;
+    private final PrintStream logger;
     private int currentLogEventCount;
     private int currentLogEventTotalSize;
     private String nextSequenceToken;
     private int sequencesSent;
 
-    public AWSLogsBuffer(BufferedReader reader, AWSLogs awsLogs, String logGroupName, String logStreamName) {
+    public AWSLogsBuffer(BufferedReader reader, AWSLogs awsLogs, String logGroupName, String logStreamName, PrintStream logger) {
         this.reader = reader;
         this.awsLogs = awsLogs;
         this.logGroupName = logGroupName;
         this.logStreamName = logStreamName;
         this.list = new ArrayList<>();
+        this.logger = logger;
     }
 
     public String readLine() throws IOException {
@@ -64,12 +63,12 @@ public final class AWSLogsBuffer implements Closeable {
         while ((newLogEventTotalSize = currentLogEventTotalSize + computeLogEventSize(msg)) >= AWS_LOGS_MAX_BATCH_SIZE) {
 
             if (currentLogEventCount != 0) {
-                LOGGER.info("Log event batch size would exceed maximum value. Sending buffer now...");
+                logger.println("[AWS Logs] Log event batch size would exceed maximum value. Sending buffer now...");
                 send();
                 continue;
             }
 
-            LOGGER.warning("Log event message will be truncated: " + msg);
+            logger.println("[AWS Logs] Log event message will be truncated: " + msg);
             msg = msg.substring(0, AWS_LOGS_MAX_BATCH_SIZE - AWS_LOG_EVENT_OVERHEAD - 6) + "[...]";
 
         }
@@ -79,7 +78,7 @@ public final class AWSLogsBuffer implements Closeable {
         list.add(new InputLogEvent().withTimestamp(timestamp).withMessage(msg));
 
         if (++currentLogEventCount >= MAX_LOG_EVENTS_IN_BATCH) {
-            LOGGER.info("Log event count would exceed maximum value of " +MAX_LOG_EVENTS_IN_BATCH + ". Sending buffer now...");
+            logger.println("[AWS Logs] Log event count would exceed maximum value of " +MAX_LOG_EVENTS_IN_BATCH + ". Sending buffer now...");
             send();
         }
 
@@ -95,7 +94,9 @@ public final class AWSLogsBuffer implements Closeable {
     }
 
     private int send() {
-        LOGGER.info(String.format("[%s:%s] Sending sequence #%s with %s log events...", logGroupName, logStreamName, this.sequencesSent + 1, list.size()));
+        String metaLogMsg = String.format("[AWS Logs] Sending sequence #%s with %s log events to '%s:%s'...", this.sequencesSent + 1, list.size(), logGroupName, logStreamName);
+        LOGGER.info(metaLogMsg);
+        logger.println(metaLogMsg);
         PutLogEventsRequest req = new PutLogEventsRequest(logGroupName, logStreamName, list);
         if (this.nextSequenceToken != null) {
             req.setSequenceToken(this.nextSequenceToken);

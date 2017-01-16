@@ -3,18 +3,10 @@ package hudson.plugins.awslogspublisher;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-import javax.servlet.ServletException;
-import java.io.IOException;
 
 
 /**
@@ -24,6 +16,9 @@ import java.io.IOException;
  * @author Elifarley Cruz
  */
 public class AWSLogsPublisher extends Recorder {
+
+    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
+    public static final AWSLogsPublisherDescriptor DESCRIPTOR = new AWSLogsPublisherDescriptor(AWSLogsPublisher.class);
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
@@ -42,7 +37,7 @@ public class AWSLogsPublisher extends Recorder {
 
         //if (!writeConsoleLog) return true;
 
-        AWSLogsHelper.publish(build, AWSLogsConfig.get());
+        AWSLogsHelper.publish(build, AWSLogsConfig.get(), listener);
         return true;
     }
 
@@ -50,44 +45,8 @@ public class AWSLogsPublisher extends Recorder {
     // If your plugin doesn't really define any property on Descriptor,
     // you don't have to do this.
     @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
+    public AWSLogsPublisherDescriptor getDescriptor() {
+        return DESCRIPTOR;
     }
 
-    /**
-     * Descriptor for {@link AWSLogsPublisher}. Used as a singleton.
-     * The class is marked as public so that it can be accessed from views.
-     * <p>
-     * <p>
-     * See <tt>src/main/resources/hudson/plugins/awslogspublisher/AWSLogsPublisher/*.jelly</tt>
-     * for the actual HTML fragment for the configuration screen.
-     */
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
-        /**
-         * This human readable name is used in the configuration screen.
-         */
-        public String getDisplayName() {
-            return "AWS CloudWatch Logs Publisher";
-        }
-
-        /**
-         * Performs on-the-fly validation of the form field 'name'.
-         *
-         * @param value This parameter receives the value that the user has typed.
-         * @return Indicates the outcome of the validation. This is sent to the browser.
-         */
-        public FormValidation doCheckFileName(@QueryParameter String value)
-                throws IOException, ServletException {
-            if (value.length() == 0)
-                return FormValidation.error("Please set a name");
-            return FormValidation.ok();
-        }
-
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            // Indicates that this builder can be used with all kinds of project types
-            return true;
-        }
-
-    }
 }
