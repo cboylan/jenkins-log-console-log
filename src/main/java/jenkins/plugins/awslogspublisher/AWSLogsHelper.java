@@ -76,7 +76,7 @@ public final class AWSLogsHelper {
             awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
         } catch (Exception e) {
-            String errorMsg = String.format("Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
+            String errorMsg = String.format("[AWS Logs] Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
         }
@@ -107,7 +107,7 @@ public final class AWSLogsHelper {
             }
 
         } catch (Exception e) {
-            String errorMsg = String.format("Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
+            String errorMsg = String.format("[AWS Logs] Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
 

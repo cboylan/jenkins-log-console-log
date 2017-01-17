@@ -54,12 +54,12 @@ public class AWSLogsPublisher extends Recorder {
                 config.getAwsRegion(), config.getLogGroupName(), logStreamName);
 
         try {
-            logger.print("Build log published to ");
+            logger.print("[AWS Logs] Build log published at ");
             listener.hyperlink(url, String.format("%s:%s", config.getLogGroupName(), logStreamName));
             logger.println();
 
         } catch (IOException e) {
-            throw new RuntimeException("Unable to write url " + url, e);
+            throw new RuntimeException("[AWS Logs] Unable to write url " + url, e);
         }
     }
 
