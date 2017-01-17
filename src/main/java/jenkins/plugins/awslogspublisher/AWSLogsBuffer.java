@@ -36,7 +36,7 @@ public final class AWSLogsBuffer implements Closeable {
     private final List<InputLogEvent> list;
     private final PrintStream logger;
     private int currentLogEventCount;
-    private int currentLogEventTotalSize; // TODO read
+    private int currentLogEventTotalSize;
     private String nextSequenceToken;
     private int sequencesSent;
 
@@ -60,7 +60,7 @@ public final class AWSLogsBuffer implements Closeable {
         }
 
         int newLogEventTotalSize;
-        while ((newLogEventTotalSize = computeLogEventSize(msg)) >= AWS_LOGS_MAX_BATCH_SIZE) {
+        while (currentLogEventTotalSize + (newLogEventTotalSize = computeLogEventSize(msg)) >= AWS_LOGS_MAX_BATCH_SIZE) {
 
             if (currentLogEventCount != 0) {
                 logger.println("[AWS Logs] Log event batch size would exceed maximum value. Sending buffer now...");
