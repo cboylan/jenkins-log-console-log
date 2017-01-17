@@ -16,6 +16,12 @@
     <java.level>7</java.level>
   </properties>
 
+  <scm>
+    <connection>scm:git:ssh://github.com/jenkinsci/aws-cloudwatch-logs-publisher.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/aws-cloudwatch-logs-publisher.git</developerConnection>
+    <url>https://github.com/jenkinsci/aws-cloudwatch-logs-publisher</url>
+  </scm>
+
   <licenses>
     <license>
       <name>MIT License</name>
