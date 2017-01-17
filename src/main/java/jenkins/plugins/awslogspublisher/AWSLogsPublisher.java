@@ -8,6 +8,9 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.IOException;
+import java.io.PrintStream;
+
 
 /**
  * When a publisher is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
@@ -34,8 +37,30 @@ public class AWSLogsPublisher extends Recorder {
      */
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        AWSLogsHelper.publish(build, AWSLogsConfig.get(), listener.getLogger());
+        showStreamInfo(build, listener);
         return true;
+    }
+
+    private static void showStreamInfo(AbstractBuild build, BuildListener listener) {
+
+        AWSLogsConfig config = AWSLogsConfig.get();
+        PrintStream logger = listener.getLogger();
+        String logStreamName = AWSLogsHelper.publish(build, config, logger);
+        if (logStreamName == null) {
+            return;
+        }
+
+        String url = String.format("https://console.aws.amazon.com/cloudwatch/home?region=%s#logEventViewer:group=%s;stream=%s",
+                config.getAwsRegion(), config.getLogGroupName(), logStreamName);
+
+        try {
+            logger.print("Build log published to ");
+            listener.hyperlink(url, String.format("%s:%s", config.getLogGroupName(), logStreamName));
+            logger.println();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write url " + url, e);
+        }
     }
 
     // Overridden for better type safety.

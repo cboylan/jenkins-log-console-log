@@ -31,13 +31,14 @@ public final class AWSLogsHelper {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    static void publish(AbstractBuild build, final AWSLogsConfig config, PrintStream logger) {
+    static String publish(AbstractBuild build, final AWSLogsConfig config, PrintStream logger) {
 
         try {
-            pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
+            return pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
 
         } catch (InterruptedException | IOException e) {
             build.setResult(Result.UNSTABLE);
+            return null;
         }
     }
 
@@ -62,10 +63,10 @@ public final class AWSLogsHelper {
                 build();
     }
 
-    private static void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, PrintStream logger)
+    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, PrintStream logger)
             throws IOException, InterruptedException {
 
-        String logStreamName = build.getProject().getName() + "/" + build.getNumber();
+        String logStreamName = getBuildSpec(build);
         {
             String listenerLogMsg = String.format("[AWS Logs] Creating log stream '%s:%s'...", logGroupName, logStreamName);
             LOGGER.info(listenerLogMsg);
@@ -112,6 +113,12 @@ public final class AWSLogsHelper {
 
         }
 
+        return logStreamName;
+
+    }
+
+    public static String getBuildSpec(AbstractBuild build) {
+        return build.getProject().getName() + "/" + build.getNumber();
     }
 
 }
