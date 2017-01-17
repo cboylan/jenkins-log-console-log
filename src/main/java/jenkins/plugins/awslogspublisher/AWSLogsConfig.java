@@ -1,4 +1,4 @@
-package hudson.plugins.awslogspublisher;
+package jenkins.plugins.awslogspublisher;
 
 /*
  * The MIT License

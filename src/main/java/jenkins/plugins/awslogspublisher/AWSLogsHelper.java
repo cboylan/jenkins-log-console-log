@@ -1,4 +1,4 @@
-package hudson.plugins.awslogspublisher;
+package jenkins.plugins.awslogspublisher;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
@@ -6,7 +6,6 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.plugins.timestamper.api.TimestamperAPI;
 
@@ -32,10 +31,10 @@ public final class AWSLogsHelper {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    static void publish(AbstractBuild build, final AWSLogsConfig config, BuildListener listener) {
+    static void publish(AbstractBuild build, final AWSLogsConfig config, PrintStream logger) {
 
         try {
-            pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), listener);
+            pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
 
         } catch (IOException | InterruptedException e) {
             build.setResult(Result.UNSTABLE);
@@ -63,10 +62,8 @@ public final class AWSLogsHelper {
                 build();
     }
 
-    private static void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, BuildListener listener)
+    private static void pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, PrintStream logger)
             throws IOException, InterruptedException {
-
-        PrintStream logger = listener.getLogger();
 
         String logStreamName = build.getProject().getName() + "/" + build.getNumber();
         {
@@ -78,9 +75,8 @@ public final class AWSLogsHelper {
             awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
         } catch (Exception e) {
-            String errorMsg = String.format("Unable to create log stream '%s' in log group '%s' (%s)",logStreamName, logGroupName, e.toString());
+            String errorMsg = String.format("Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
             LOGGER.warning(errorMsg);
-            e.printStackTrace(listener.error(errorMsg));
             throw new RuntimeException(errorMsg, e);
         }
 
@@ -111,9 +107,9 @@ public final class AWSLogsHelper {
             }
 
         } catch (Exception e) {
-            LOGGER.warning(e.toString());
-            e.printStackTrace(listener.error(e.toString()));
-            throw new RuntimeException(e);
+            String errorMsg = String.format("Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
+            LOGGER.warning(errorMsg);
+            throw new RuntimeException(errorMsg, e);
         }
 
     }

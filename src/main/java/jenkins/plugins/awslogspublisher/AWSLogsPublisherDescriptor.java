@@ -1,4 +1,4 @@
-package hudson.plugins.awslogspublisher;
+package jenkins.plugins.awslogspublisher;
 
 import hudson.model.AbstractProject;
 import hudson.tasks.BuildStepDescriptor;

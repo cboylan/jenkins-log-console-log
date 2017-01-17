@@ -1,4 +1,4 @@
-package hudson.plugins.awslogspublisher;
+package jenkins.plugins.awslogspublisher;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InputLogEvent;

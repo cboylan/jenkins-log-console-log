@@ -1,4 +1,4 @@
-package hudson.plugins.awslogspublisher;
+package jenkins.plugins.awslogspublisher;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -34,10 +34,7 @@ public class AWSLogsPublisher extends Recorder {
      */
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-
-        //if (!writeConsoleLog) return true;
-
-        AWSLogsHelper.publish(build, AWSLogsConfig.get(), listener);
+        AWSLogsHelper.publish(build, AWSLogsConfig.get(), listener.getLogger());
         return true;
     }
 
