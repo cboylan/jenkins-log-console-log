@@ -14,7 +14,7 @@ import java.io.IOException;
  * The class is marked as public so that it can be accessed from views.
  * <p>
  * <p>
- * See <tt>src/main/resources/hudson/plugins/awslogspublisher/AWSLogsPublisher/*.jelly</tt>
+ * See <tt>src/main/resources/jenkins/plugins/awslogspublisher/AWSLogsPublisher/*.jelly</tt>
  * for the actual HTML fragment for the configuration screen.
  */
 public final class AWSLogsPublisherDescriptor extends BuildStepDescriptor<Publisher> {
