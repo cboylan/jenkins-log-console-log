@@ -11,6 +11,15 @@
   <packaging>hpi</packaging>
   <name>AWS CloudWatch Logs Publisher</name>
   <description>Publishes build logs to Amazon CloudWatch Logs.</description>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/AWS+CloudWatch+Logs+Publisher</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <properties>
     <java.level>7</java.level>
@@ -22,28 +31,13 @@
     <url>https://github.com/jenkinsci/aws-cloudwatch-logs-publisher</url>
   </scm>
 
-  <licenses>
-    <license>
-      <name>MIT License</name>
-      <url>http://www.opensource.org/licenses/mit-license.php</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-
-  <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
+  <developers>
+    <developer>
+      <id>elifarley</id>
+      <name>Elifarley Cruz</name>
+      <email>elifarley@gmail.com</email>
+    </developer>
+  </developers>
 
   <dependencies>
 
