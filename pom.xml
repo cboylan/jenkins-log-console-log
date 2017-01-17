@@ -13,6 +13,10 @@
   <name>AWS CloudWatch Logs Publisher</name>
   <description>Publishes the build log of Jenkins builds.</description>
 
+  <properties>
+    <java.level>6</java.level>
+  </properties>
+
   <licenses>
     <license>
       <name>MIT License</name>

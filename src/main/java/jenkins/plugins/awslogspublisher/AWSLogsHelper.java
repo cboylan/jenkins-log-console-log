@@ -36,7 +36,9 @@ public final class AWSLogsHelper {
         try {
             pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
 
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            build.setResult(Result.UNSTABLE);
+        } catch (IOException e) {
             build.setResult(Result.UNSTABLE);
         }
     }
@@ -80,8 +82,9 @@ public final class AWSLogsHelper {
             throw new RuntimeException(errorMsg, e);
         }
 
-        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger)) {
-
+        AWSLogsBuffer buffer = null;
+        try {
+            buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger);
             String line;
             int count = 0;
             Long timestamp = System.currentTimeMillis();
@@ -110,6 +113,11 @@ public final class AWSLogsHelper {
             String errorMsg = String.format("Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
+
+        } finally {
+            if (buffer != null) {
+                buffer.close();
+            }
         }
 
     }

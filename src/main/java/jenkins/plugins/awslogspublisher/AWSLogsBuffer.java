@@ -36,7 +36,7 @@ public final class AWSLogsBuffer implements Closeable {
     private final List<InputLogEvent> list;
     private final PrintStream logger;
     private int currentLogEventCount;
-    private int currentLogEventTotalSize;
+    private int currentLogEventTotalSize; // TODO read
     private String nextSequenceToken;
     private int sequencesSent;
 
@@ -45,7 +45,7 @@ public final class AWSLogsBuffer implements Closeable {
         this.awsLogs = awsLogs;
         this.logGroupName = logGroupName;
         this.logStreamName = logStreamName;
-        this.list = new ArrayList<>();
+        this.list = new ArrayList<InputLogEvent>();
         this.logger = logger;
     }
 
