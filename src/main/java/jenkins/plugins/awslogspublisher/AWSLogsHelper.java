@@ -1,7 +1,7 @@
 package jenkins.plugins.awslogspublisher;
 
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
@@ -36,9 +36,7 @@ public final class AWSLogsHelper {
         try {
             pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
 
-        } catch (InterruptedException e) {
-            build.setResult(Result.UNSTABLE);
-        } catch (IOException e) {
+        } catch (InterruptedException | IOException e) {
             build.setResult(Result.UNSTABLE);
         }
     }
@@ -60,7 +58,7 @@ public final class AWSLogsHelper {
 
         return AWSLogsClientBuilder.standard().
                 withRegion(config.getAwsRegion()).
-                withCredentials(new StaticCredentialsProvider(credentials)).
+                withCredentials(new AWSStaticCredentialsProvider(credentials)).
                 build();
     }
 
@@ -82,9 +80,7 @@ public final class AWSLogsHelper {
             throw new RuntimeException(errorMsg, e);
         }
 
-        AWSLogsBuffer buffer = null;
-        try {
-            buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger);
+        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger)) {
             String line;
             int count = 0;
             Long timestamp = System.currentTimeMillis();
@@ -114,10 +110,6 @@ public final class AWSLogsHelper {
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
 
-        } finally {
-            if (buffer != null) {
-                buffer.close();
-            }
         }
 
     }

@@ -45,7 +45,7 @@ public final class AWSLogsBuffer implements Closeable {
         this.awsLogs = awsLogs;
         this.logGroupName = logGroupName;
         this.logStreamName = logStreamName;
-        this.list = new ArrayList<InputLogEvent>();
+        this.list = new ArrayList<>();
         this.logger = logger;
     }
 

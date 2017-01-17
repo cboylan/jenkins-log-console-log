@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.580.3</version>
+    <version>2.9</version>
   </parent>
 
   <artifactId>aws-cloudwatch-logs-publisher</artifactId>
@@ -13,7 +13,7 @@
   <description>Publishes build logs to Amazon CloudWatch Logs.</description>
 
   <properties>
-    <java.level>6</java.level>
+    <java.level>7</java.level>
   </properties>
 
   <licenses>
@@ -39,29 +39,19 @@
     </pluginRepository>
   </pluginRepositories>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-bom</artifactId>
-        <version>1.11.22</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
 
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-logs</artifactId>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>aws-java-sdk</artifactId>
+      <version>1.11.68</version>
     </dependency>
 
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>timestamper</artifactId>
       <version>1.8.7</version>
+      <optional>true</optional>
     </dependency>
 
   </dependencies>
