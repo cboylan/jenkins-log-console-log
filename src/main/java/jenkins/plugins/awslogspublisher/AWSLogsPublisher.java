@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.ProminentProjectAction;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -43,15 +44,17 @@ public class AWSLogsPublisher extends Recorder {
 
     private static void showStreamInfo(AbstractBuild build, BuildListener listener) {
 
-        AWSLogsConfig config = AWSLogsConfig.get();
+        final AWSLogsConfig config = AWSLogsConfig.get();
         PrintStream logger = listener.getLogger();
-        String logStreamName = AWSLogsHelper.publish(build, config, logger);
+        final String logStreamName = AWSLogsHelper.publish(build, config, logger);
         if (logStreamName == null) {
             return;
         }
 
-        String url = String.format("https://console.aws.amazon.com/cloudwatch/home?region=%s#logEventViewer:group=%s;stream=%s",
+        final String url = String.format("https://console.aws.amazon.com/cloudwatch/home?region=%s#logEventViewer:group=%s;stream=%s",
                 config.getAwsRegion(), config.getLogGroupName(), logStreamName);
+
+        addProminentAWSLogsLink(build, url);
 
         try {
             logger.print("[AWS Logs] Build log published at ");
@@ -61,6 +64,25 @@ public class AWSLogsPublisher extends Recorder {
         } catch (IOException e) {
             throw new RuntimeException("[AWS Logs] Unable to write url " + url, e);
         }
+    }
+
+    private static void addProminentAWSLogsLink(AbstractBuild build, final String url) {
+        build.addAction(new ProminentProjectAction() {
+            @Override
+            public String getIconFileName() {
+                return "notepad.png";
+            }
+
+            @Override
+            public String getDisplayName() {
+                return "AWS CloudWatch Logs";
+            }
+
+            @Override
+            public String getUrlName() {
+                return url;
+            }
+        });
     }
 
     // Overridden for better type safety.
