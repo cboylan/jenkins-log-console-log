@@ -26,10 +26,15 @@ public final class AWSLogsHelper {
 
     private static final String QUERY = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
     private static final Pattern PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
-    static {
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
+
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
+            result.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return result;
+        }
+    };
 
     static String publish(AbstractBuild build, final AWSLogsConfig config, PrintStream logger) {
 
@@ -89,7 +94,7 @@ public final class AWSLogsHelper {
 
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
-                    timestamp = DATE_FORMAT.parse(line.substring(0, matcher.end())).getTime();
+                    timestamp = DATE_FORMAT.get().parse(line.substring(0, matcher.end())).getTime();
                     line = line.substring(matcher.end() + 2);
 
                 } else {
