@@ -1,4 +1,5 @@
 # AWS CloudWatch Logs Publisher
+[![Build Status](https://jenkins.ci.cloudbees.com/buildStatus/icon?job=plugins/aws-cloudwatch-logs-publisher-plugin)](https://jenkins.ci.cloudbees.com/job/plugins/job/aws-cloudwatch-logs-publisher-plugin/)
 
 This Jenkins plugin allows you to send the console log of your builds to [Amazon CloudWatch Logs](https://aws.amazon.com/about-aws/whats-new/2014/07/10/introducing-amazon-cloudwatch-logs/ Amazon CloudWatch Logs).
 
