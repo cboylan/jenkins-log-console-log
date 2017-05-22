@@ -1,11 +1,16 @@
 package jenkins.plugins.awslogspublisher;
 
+import com.google.common.base.Strings;
 import hudson.model.AbstractProject;
+import hudson.model.Descriptor;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.CheckForNull;
 import javax.servlet.ServletException;
 import java.io.IOException;
 
@@ -23,9 +28,9 @@ public final class AWSLogsPublisherDescriptor extends BuildStepDescriptor<Publis
         super(clazz);
     }
 
-    /**
-     * This human readable name is used in the configuration screen.
-     */
+        /**
+         * This human readable name is used in the configuration screen.
+         */
     public String getDisplayName() {
         return "AWS CloudWatch Logs Publisher";
     }
@@ -45,6 +50,14 @@ public final class AWSLogsPublisherDescriptor extends BuildStepDescriptor<Publis
 
     public boolean isApplicable(Class<? extends AbstractProject> aClass) {
         // Indicates that this builder can be used with all kinds of project types
+        return true;
+    }
+
+    @Override
+    public boolean configure(StaplerRequest req, JSONObject json)
+            throws Descriptor.FormException {
+        req.bindJSON(this, json);
+        save();
         return true;
     }
 

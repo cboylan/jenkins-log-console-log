@@ -5,6 +5,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
+import com.google.common.base.Strings;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.plugins.timestamper.api.TimestamperAPI;
@@ -36,10 +37,10 @@ public final class AWSLogsHelper {
         }
     };
 
-    static String publish(AbstractBuild build, final AWSLogsConfig config, PrintStream logger) {
+    static String publish(AbstractBuild build, final AWSLogsConfig config, String logStreamName, PrintStream logger) {
 
         try {
-            return pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logger);
+            return pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logStreamName, logger);
 
         } catch (InterruptedException | IOException e) {
             build.setResult(Result.UNSTABLE);
@@ -68,10 +69,13 @@ public final class AWSLogsHelper {
                 build();
     }
 
-    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, PrintStream logger)
+    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, String logStreamName, PrintStream logger)
             throws IOException, InterruptedException {
 
-        String logStreamName = getBuildSpec(build);
+        if (Strings.isNullOrEmpty(logStreamName)) {
+            logStreamName = getBuildSpec(build);
+        }
+
         {
             String listenerLogMsg = String.format("[AWS Logs] Creating log stream '%s:%s'...", logGroupName, logStreamName);
             LOGGER.info(listenerLogMsg);
