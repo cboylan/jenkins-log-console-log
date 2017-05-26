@@ -6,8 +6,10 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.io.PrintStream;
 
@@ -25,7 +27,18 @@ public class AWSLogsPublisher extends Recorder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public AWSLogsPublisher() {
+    public AWSLogsPublisher(String logStreamName) {
+        this.logStreamName = logStreamName;
+    }
+
+    private String logStreamName;
+
+    public void setLogStreamName(@CheckForNull String logStreamName) {
+        this.logStreamName = logStreamName;
+    }
+
+    public String getLogStreamName() {
+        return logStreamName;
     }
 
     public BuildStepMonitor getRequiredMonitorService() {
@@ -36,16 +49,15 @@ public class AWSLogsPublisher extends Recorder {
      * Actually publish the Console Logs to the workspace.
      */
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        showStreamInfo(build, listener);
+    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+        showStreamInfo(build, listener, build.getEnvironment(listener).expand(logStreamName));
         return true;
     }
 
-    private static void showStreamInfo(AbstractBuild build, BuildListener listener) {
-
+    private static void showStreamInfo(AbstractBuild build, BuildListener listener, String configuredLogStreamName) {
         final AWSLogsConfig config = AWSLogsConfig.get();
         PrintStream logger = listener.getLogger();
-        final String logStreamName = AWSLogsHelper.publish(build, config, logger);
+        final String logStreamName = AWSLogsHelper.publish(build, config, configuredLogStreamName, logger);
         if (logStreamName == null) {
             return;
         }
