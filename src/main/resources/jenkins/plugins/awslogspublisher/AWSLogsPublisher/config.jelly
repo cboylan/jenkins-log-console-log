@@ -25,7 +25,7 @@ THE SOFTWARE.
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:section title="${%AWS CloudWatch Logs Publisher}">
-    <f:entry title="${%Log group name}" field="logStreamName">
+    <f:entry title="${%Log stream name}" field="logStreamName">
       <f:textbox/>
     </f:entry>
   </f:section>
