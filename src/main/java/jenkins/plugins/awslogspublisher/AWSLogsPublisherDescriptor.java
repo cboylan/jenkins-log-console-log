@@ -28,9 +28,9 @@ public final class AWSLogsPublisherDescriptor extends BuildStepDescriptor<Publis
         super(clazz);
     }
 
-        /**
-         * This human readable name is used in the configuration screen.
-         */
+    /**
+     * This human readable name is used in the configuration screen.
+     */
     public String getDisplayName() {
         return "AWS CloudWatch Logs Publisher";
     }
