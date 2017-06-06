@@ -9,11 +9,14 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import com.google.common.base.Strings;
 import hudson.model.AbstractBuild;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.plugins.timestamper.api.TimestamperAPI;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.logging.Logger;
@@ -102,6 +105,21 @@ public final class AWSLogsHelper {
             int count = 0;
             Long timestamp = System.currentTimeMillis();
             while ((line = buffer.readLine()) != null) {
+                // Insert Parameter at top of log
+                if(count == 0){
+                    if(build.getProject().isParameterized()) {
+                        ParametersAction parameters = build.getAction(ParametersAction.class);
+                        if (parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
+                            buffer.add("Parameters: ", timestamp);
+                            for (ParameterValue action : parameters.getParameters()) {
+
+                                String paramLine = String.format("%s = '%s'", action.getName(),
+                                        action.isSensitive() ? "*****" : action.getValue());
+                                buffer.add(paramLine, timestamp);
+                            }
+                        }
+                    }
+                }
 
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
@@ -122,7 +140,7 @@ public final class AWSLogsHelper {
 
             }
 
-        } catch (Exception e) {
+        } catch (ParseException e) {
             String errorMsg = String.format("[AWS Logs] Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
