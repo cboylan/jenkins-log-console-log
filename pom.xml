@@ -7,9 +7,12 @@
     </parent>
 
     <groupId>hudson.plugins.ConsoleLogToWorkspace</groupId>
-    <artifactId>ConsoleLogToWorkspace</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <artifactId>console-log-to-workspace</artifactId>
+    <version>1.2-SNAPSHOT</version>
     <packaging>hpi</packaging>
+
+    <name>Console Log To Workspace</name>
+    <description>Write the console log to a file in the workspace</description>
 
     <licenses>
         <license>
