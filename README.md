@@ -7,3 +7,11 @@ One of its uses is to allow post-processing tools such as log analyzers that
 only reads files to do its work.
 
 It is available as a build-step and as a post-build action.
+
+To build the plugin, install maven and run:
+
+    mvn package
+
+or
+
+    mvn install
