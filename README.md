@@ -1,7 +1,7 @@
 # [AWS CloudWatch Logs Publisher](https://wiki.jenkins-ci.org/display/JENKINS/AWS+CloudWatch+Logs+Publisher+Plugin)
 [![Build Status](https://jenkins.ci.cloudbees.com/buildStatus/icon?job=plugins/aws-cloudwatch-logs-publisher-plugin)](https://jenkins.ci.cloudbees.com/job/plugins/job/aws-cloudwatch-logs-publisher-plugin/)
 
-This Jenkins plugin allows you to send the console log of your builds to [Amazon CloudWatch Logs](https://aws.amazon.com/about-aws/whats-new/2014/07/10/introducing-amazon-cloudwatch-logs/ Amazon CloudWatch Logs).
+This Jenkins plugin allows you to send the console log of your builds to [Amazon CloudWatch Logs](https://aws.amazon.com/about-aws/whats-new/2014/07/10/introducing-amazon-cloudwatch-logs/ "Amazon CloudWatch Logs").
 
 In your job configuration page, go to the section **Post-build Actions**,
  click the **Add post-build action** button and select the item **AWS CloudWatch Logs Publisher**.
@@ -15,7 +15,7 @@ If no account information is specified (**AWS Access Key Id** and **AWS Secret K
 - Amazon ECS container credentials
 - Instance profile credentials
 
-For more information [Working with AWS Credentials](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html Working with AWS Credentials).
+For more information [Working with AWS Credentials](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html "Working with AWS Credentials").
 
 The AWS account requires *logs:CreateLogStream* and *logs:PutLogEvents* rights, as in the example below:
 ~~~~
