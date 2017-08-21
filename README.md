@@ -6,8 +6,18 @@ This Jenkins plugin allows you to send the console log of your builds to [Amazon
 In your job configuration page, go to the section **Post-build Actions**,
  click the **Add post-build action** button and select the item **AWS CloudWatch Logs Publisher**.
 
-In **Manage Jenkins > Configure System > AWS Logs Publisher**, you have to configure the **AWS Access Key Id** and **AWS Secret Key** of an account with *logs:CreateLogStream* and *logs:PutLogEvents* rights, as in the example below:
 
+In **Manage Jenkins > Configure System > AWS Logs Publisher**, you have to configure the **AWS Access Key Id** and **AWS Secret Key**.
+If no account information is specified (**AWS Access Key Id** and **AWS Secret Key**) the plugin will use the default credential provider chain, which looks for credentials in this order:
+- Environment variables
+- Java system properties
+- The default credential profiles file
+- Amazon ECS container credentials
+- Instance profile credentials
+
+For more information [Working with AWS Credentials](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html Working with AWS Credentials).
+
+The AWS account requires *logs:CreateLogStream* and *logs:PutLogEvents* rights, as in the example below:
 ~~~~
   {
       "Version": "2012-10-17",
@@ -23,3 +33,5 @@ In **Manage Jenkins > Configure System > AWS Logs Publisher**, you have to confi
       ]
   }
 ~~~~
+
+

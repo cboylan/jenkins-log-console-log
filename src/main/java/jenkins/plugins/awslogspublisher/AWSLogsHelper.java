@@ -2,6 +2,8 @@ package jenkins.plugins.awslogspublisher;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
@@ -50,23 +52,28 @@ public final class AWSLogsHelper {
 
     private static AWSLogs getAwsLogs(final AWSLogsConfig config) {
 
-        AWSCredentials credentials = new AWSCredentials() {
+	    if (!Strings.isNullOrEmpty(config.getAwsAccessKeyId()) && (!Strings.isNullOrEmpty(config.getAwsSecretKey()))) {
+		    AWSCredentials credentials = new AWSCredentials() {
 
-            @Override
-            public String getAWSAccessKeyId() {
-                return config.getAwsAccessKeyId();
-            }
+			    @Override
+			    public String getAWSAccessKeyId() {
+				    return config.getAwsAccessKeyId();
+			    }
 
-            @Override
-            public String getAWSSecretKey() {
-                return config.getAwsSecretKey();
-            }
-        };
+			    @Override
+			    public String getAWSSecretKey() {
+				    return config.getAwsSecretKey();
+			    }
+		    };
 
-        return AWSLogsClientBuilder.standard().
-                withRegion(config.getAwsRegion()).
-                withCredentials(new AWSStaticCredentialsProvider(credentials)).
-                build();
+		    return AWSLogsClientBuilder.standard().
+			    withRegion(config.getAwsRegion()).
+			    withCredentials(new AWSStaticCredentialsProvider(credentials)).
+			    build();
+	    }
+
+	    // default use DefaultAWSCredentialsProviderChain()
+	    return AWSLogsClientBuilder.standard().build();
     }
 
     private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, String logStreamName, PrintStream logger)
