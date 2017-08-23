@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>aws-cloudwatch-logs-publisher</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>AWS CloudWatch Logs Publisher</name>
   <description>Publishes build logs to Amazon CloudWatch Logs.</description>
@@ -29,7 +29,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>aws-cloudwatch-logs-publisher-1.1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
