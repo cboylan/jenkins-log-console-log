@@ -14,10 +14,11 @@ public class ConsoleLogToWorkspace {
     public static boolean perform(Run<?, ?> build, FilePath workspace, TaskListener listener,
             boolean writeConsoleLog, String fileName, boolean blockOnAllOutput) {
         final OutputStream os;
-        final EnvVars env = build.getEnvironment(listener);
-        fileName=env.expand(fileName);
 
         try {
+            final EnvVars env = build.getEnvironment(listener);
+            fileName=env.expand(fileName);
+
             if (writeConsoleLog) {
                 log("Writing console log to workspace file " + fileName + " started", listener);
                 os = workspace.child(fileName).write();
