@@ -57,10 +57,10 @@ public final class AWSLogsHelper {
     }
 
     private static AWSLogs getAwsLogsClient(final AWSLogsConfig config) {
+	    // retryPolicy: retryCondition, backoffStrategy(baseDelay, maxBackoffTime), maxErrorRetry, honorMaxErrorRetryInClientConfig
 	    ClientConfiguration AWSconfig = new ClientConfiguration()
 		    .withThrottledRetries(true)
 		    .withConnectionTimeout(6000)
-		    // retryCondition, backoffStrategy(baseDelay, maxBackoffTime), maxErrorRetry, honorMaxErrorRetryInClientConfig
 		    .withRetryPolicy(new RetryPolicy(PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION,
 					    PredefinedRetryPolicies.DEFAULT_BACKOFF_STRATEGY,
 					    10, true));
