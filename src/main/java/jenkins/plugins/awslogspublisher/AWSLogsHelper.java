@@ -1,5 +1,8 @@
 package jenkins.plugins.awslogspublisher;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.retry.RetryPolicy;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -45,7 +48,7 @@ public final class AWSLogsHelper {
     static String publish(AbstractBuild build, final AWSLogsConfig config, String logStreamName, PrintStream logger) {
 
         try {
-            return pushToAWSLogs(build, getAwsLogs(config), config.getLogGroupName(), logStreamName, logger);
+            return pushToAWSLogs(build, getAwsLogsClient(config), config.getLogGroupName(), logStreamName, logger);
 
         } catch (InterruptedException | IOException e) {
             build.setResult(Result.UNSTABLE);
@@ -53,7 +56,14 @@ public final class AWSLogsHelper {
         }
     }
 
-    private static AWSLogs getAwsLogs(final AWSLogsConfig config) {
+    private static AWSLogs getAwsLogsClient(final AWSLogsConfig config) {
+	    ClientConfiguration AWSconfig = new ClientConfiguration()
+		    .withThrottledRetries(true)
+		    .withConnectionTimeout(6000)
+		    // retryCondition, backoffStrategy(baseDelay, maxBackoffTime), maxErrorRetry, honorMaxErrorRetryInClientConfig
+		    .withRetryPolicy(new RetryPolicy(PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION,
+					    PredefinedRetryPolicies.DEFAULT_BACKOFF_STRATEGY,
+					    10, true));
 
 	    if (!Strings.isNullOrEmpty(config.getAwsAccessKeyId()) && (!Strings.isNullOrEmpty(config.getAwsSecretKey()))) {
 		    AWSCredentials credentials = new AWSCredentials() {
@@ -69,17 +79,20 @@ public final class AWSLogsHelper {
 			    }
 		    };
 
-		    return AWSLogsClientBuilder.standard().
-			    withRegion(config.getAwsRegion()).
-			    withCredentials(new AWSStaticCredentialsProvider(credentials)).
-			    build();
+		    return AWSLogsClientBuilder.standard()
+			    .withClientConfiguration(AWSconfig)
+			    .withRegion(config.getAwsRegion())
+			    .withCredentials(new AWSStaticCredentialsProvider(credentials))
+			    .build();
 	    }
 
 	    // default use DefaultAWSCredentialsProviderChain()
-	    return AWSLogsClientBuilder.standard().build();
+	    return AWSLogsClientBuilder.standard()
+		    .withClientConfiguration(AWSconfig)
+		    .build();
     }
 
-    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogs, String logGroupName, String logStreamName, PrintStream logger)
+    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger)
             throws IOException, InterruptedException {
 
         if (Strings.isNullOrEmpty(logStreamName)) {
@@ -92,7 +105,7 @@ public final class AWSLogsHelper {
         }
 
         try {
-            awsLogs.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
+            awsLogsClient.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
 
         } catch (Exception e) {
             String errorMsg = String.format("[AWS Logs] Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
@@ -100,7 +113,7 @@ public final class AWSLogsHelper {
             throw new RuntimeException(errorMsg, e);
         }
 
-        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogs, logGroupName, logStreamName, logger)) {
+        try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogsClient, logGroupName, logStreamName, logger)) {
             String line;
             int count = 0;
             Long timestamp = System.currentTimeMillis();
@@ -137,14 +150,12 @@ public final class AWSLogsHelper {
 
                 buffer.add(line, timestamp);
                 count++;
-
             }
 
         } catch (ParseException e) {
             String errorMsg = String.format("[AWS Logs] Unable to publish build log to '%s:%s' (%s)", logGroupName, logStreamName, e.toString());
             LOGGER.warning(errorMsg);
             throw new RuntimeException(errorMsg, e);
-
         }
 
         return logStreamName;
@@ -154,5 +165,4 @@ public final class AWSLogsHelper {
     public static String getBuildSpec(AbstractBuild build) {
         return build.getProject().getName() + "/" + build.getNumber();
     }
-
 }
