@@ -30,7 +30,7 @@ public final class AWSLogsBuffer implements Closeable {
     // ------------------ Do not change this block ------------------
 
     private final BufferedReader reader;
-    private final AWSLogs awsLogs;
+    private final AWSLogs awsLogsClient;
     private final String logGroupName;
     private final String logStreamName;
     private final List<InputLogEvent> list;
@@ -40,9 +40,9 @@ public final class AWSLogsBuffer implements Closeable {
     private String nextSequenceToken;
     private int sequencesSent;
 
-    public AWSLogsBuffer(BufferedReader reader, AWSLogs awsLogs, String logGroupName, String logStreamName, PrintStream logger) {
+    public AWSLogsBuffer(BufferedReader reader, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger) {
         this.reader = reader;
-        this.awsLogs = awsLogs;
+        this.awsLogsClient = awsLogsClient;
         this.logGroupName = logGroupName;
         this.logStreamName = logStreamName;
         this.list = new ArrayList<>();
@@ -101,7 +101,7 @@ public final class AWSLogsBuffer implements Closeable {
         if (this.nextSequenceToken != null) {
             req.setSequenceToken(this.nextSequenceToken);
         }
-        this.nextSequenceToken = awsLogs.putLogEvents(req).getNextSequenceToken();
+        this.nextSequenceToken = awsLogsClient.putLogEvents(req).getNextSequenceToken();
         list.clear();
         currentLogEventCount = 0;
         currentLogEventTotalSize = 0;
