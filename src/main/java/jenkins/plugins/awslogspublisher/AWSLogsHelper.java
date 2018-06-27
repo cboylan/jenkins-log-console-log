@@ -5,13 +5,14 @@ import com.amazonaws.retry.RetryPolicy;
 import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
+import com.amazonaws.services.logs.model.DescribeLogStreamsRequest;
+import com.amazonaws.services.logs.model.LogStream;
+import com.amazonaws.services.logs.model.ResourceAlreadyExistsException;
+import com.amazonaws.services.logs.model.ResourceNotFoundException;
 import com.google.common.base.Strings;
-import hudson.model.AbstractBuild;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Result;
@@ -93,6 +94,40 @@ public final class AWSLogsHelper {
 		    .build();
     }
 
+    // Create the requested LogStream within the given LogGroup. If it already exists, return the next sequence token.
+    private static String createLogStream(AWSLogs awsLogsClient, String logGroupName, String logStreamName) {
+    	// see if the stream already exists, reuse it
+    	DescribeLogStreamsRequest dreq = new DescribeLogStreamsRequest(logGroupName);
+    	dreq.setLogStreamNamePrefix(logStreamName);
+    	try {
+    		for (LogStream stream : awsLogsClient.describeLogStreams(dreq).getLogStreams()) {
+    			// find exact stream name
+    			if (stream.getLogStreamName().contentEquals(logStreamName)) {
+    				return stream.getUploadSequenceToken();
+    			}
+			}
+    	} catch (ResourceNotFoundException ex) {
+    		// try to create instead
+    	}
+
+    	{
+    		String listenerLogMsg = String.format("[AWS Logs] Creating log stream '%s:%s'...", logGroupName, logStreamName);
+    		LOGGER.info(listenerLogMsg);
+    	}
+
+    	try {
+    		awsLogsClient.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
+    	} catch (Exception e) {
+    		if (!(e instanceof ResourceAlreadyExistsException)) {
+    			String errorMsg = String.format("[AWS Logs] Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
+    			LOGGER.warning(errorMsg);
+    			throw new RuntimeException(errorMsg, e);
+    		}
+    	}
+
+    	return null;
+    }
+
     private static String pushToAWSLogs(Run build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger)
             throws IOException, InterruptedException {
 
@@ -100,21 +135,12 @@ public final class AWSLogsHelper {
             logStreamName = getBuildSpec(build);
         }
 
-        {
-            String listenerLogMsg = String.format("[AWS Logs] Creating log stream '%s:%s'...", logGroupName, logStreamName);
-            LOGGER.info(listenerLogMsg);
-        }
-
-        try {
-            awsLogsClient.createLogStream(new CreateLogStreamRequest(logGroupName, logStreamName));
-
-        } catch (Exception e) {
-            String errorMsg = String.format("[AWS Logs] Unable to create log stream '%s' in log group '%s' (%s)", logStreamName, logGroupName, e.toString());
-            LOGGER.warning(errorMsg);
-            throw new RuntimeException(errorMsg, e);
-        }
+        String sequenceToken = createLogStream(awsLogsClient, logGroupName, logStreamName);
 
         try (AWSLogsBuffer buffer = new AWSLogsBuffer(TimestamperAPI.get().read(build, QUERY), awsLogsClient, logGroupName, logStreamName, logger)) {
+        	if (sequenceToken != null) {
+        		buffer.setNextSequenceToken(sequenceToken);
+        	}
             String line;
             int count = 0;
             Long timestamp = System.currentTimeMillis();

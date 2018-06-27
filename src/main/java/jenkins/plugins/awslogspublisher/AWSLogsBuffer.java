@@ -119,4 +119,8 @@ public final class AWSLogsBuffer implements Closeable {
 
     }
 
+    public void setNextSequenceToken(String nextSequenceToken) {
+		this.nextSequenceToken = nextSequenceToken;
+	}
+
 }
