@@ -15,6 +15,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.plugins.timestamper.api.TimestamperAPI;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public final class AWSLogsHelper {
         }
     };
 
-    static String publish(AbstractBuild build, final AWSLogsConfig config, String logStreamName, PrintStream logger) {
+    static String publish(Run build, final AWSLogsConfig config, String logStreamName, PrintStream logger) {
 
         try {
             return pushToAWSLogs(build, getAwsLogsClient(config), config.getLogGroupName(), logStreamName, logger);
@@ -92,7 +93,7 @@ public final class AWSLogsHelper {
 		    .build();
     }
 
-    private static String pushToAWSLogs(AbstractBuild build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger)
+    private static String pushToAWSLogs(Run build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger)
             throws IOException, InterruptedException {
 
         if (Strings.isNullOrEmpty(logStreamName)) {
@@ -120,18 +121,16 @@ public final class AWSLogsHelper {
             while ((line = buffer.readLine()) != null) {
                 // Insert Parameter at top of log
                 if(count == 0){
-                    if(build.getProject().isParameterized()) {
-                        ParametersAction parameters = build.getAction(ParametersAction.class);
-                        if (parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
-                            buffer.add("Parameters: ", timestamp);
-                            for (ParameterValue action : parameters.getParameters()) {
+					ParametersAction parameters = build.getAction(ParametersAction.class);
+					if (parameters != null && parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
+						buffer.add("Parameters: ", timestamp);
+						for (ParameterValue action : parameters.getParameters()) {
 
-                                String paramLine = String.format("%s = '%s'", action.getName(),
-                                        action.isSensitive() ? "*****" : action.getValue());
-                                buffer.add(paramLine, timestamp);
-                            }
-                        }
-                    }
+							String paramLine = String.format("%s = '%s'", action.getName(),
+									action.isSensitive() ? "*****" : action.getValue());
+							buffer.add(paramLine, timestamp);
+						}
+					}
                 }
 
                 Matcher matcher = PATTERN.matcher(line);
@@ -162,7 +161,7 @@ public final class AWSLogsHelper {
 
     }
 
-    public static String getBuildSpec(AbstractBuild build) {
-        return build.getProject().getName() + "/" + build.getNumber();
+    public static String getBuildSpec(Run build) {
+        return build.getParent().getName() + "/" + build.getNumber();
     }
 }
