@@ -31,17 +31,30 @@ public class AWSLogsStep extends Step {
     private AWSLogsConfig config;
 
     @DataBoundConstructor
-    public AWSLogsStep(String logGroupName, String logStreamName, String awsRegion, String awsAccessKeyId, String awsSecretKey) throws Descriptor.FormException{
-        this.config = new AWSLogsConfig();
-        this.config.setAwsRegion(awsRegion);
-        this.config.setAwsAccessKeyId(awsAccessKeyId);
-        this.config.setAwsSecretKey(awsSecretKey);
-        if (logGroupName != null && !logGroupName.isEmpty()) {
-            this.config.setLogGroupName(logGroupName);
+    public AWSLogsStep(String logStreamName, String logGroupName, String awsRegion, String awsAccessKeyId,
+            String awsSecretKey) throws Descriptor.FormException {
+
+        if (StringUtils.isEmpty(logStreamName)) {
+            throw new Descriptor.FormException("cannot be empty", "logStreamName");
         }
-        if (logStreamName != null) {
-            // '*' and ':' are not allowed in stream names
-            this.logStreamName = logStreamName.replace('*', '-').replace(':', '-');
+        // '*' and ':' are not allowed in stream names
+        this.logStreamName = logStreamName.replace('*', '-').replace(':', '-');
+
+        this.config = AWSLogsConfig.get();
+        if (this.config == null) {
+            this.config = new AWSLogsConfig();
+        }
+        if (StringUtils.isNotEmpty(awsRegion)) {
+            this.config.setAwsRegion(awsRegion);
+        }
+        if (StringUtils.isNotEmpty(awsAccessKeyId)) {
+            this.config.setAwsAccessKeyId(awsAccessKeyId);
+        }
+        if (StringUtils.isNotEmpty(awsSecretKey)) {
+            this.config.setAwsSecretKey(awsSecretKey);
+        }
+        if (StringUtils.isNotEmpty(logGroupName)) {
+            this.config.setLogGroupName(logGroupName);
         }
     }
 
