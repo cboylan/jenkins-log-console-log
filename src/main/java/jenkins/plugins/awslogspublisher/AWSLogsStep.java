@@ -1,7 +1,6 @@
 package jenkins.plugins.awslogspublisher;
 
 import java.io.PrintStream;
-import java.io.Serializable;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -25,13 +24,13 @@ import hudson.model.Descriptor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
 
 public class AWSLogsStep extends Step {
 
     private static Logger LOGGER = Logger.getLogger(AWSLogsStep.class.getName());
 
     private String logStreamName;
+    private String logGroupName;
     private AWSLogsConfig config;
 
     @DataBoundConstructor
@@ -43,10 +42,7 @@ public class AWSLogsStep extends Step {
         // '*' and ':' are not allowed in stream names
         this.logStreamName = logStreamName.replace('*', '-').replace(':', '-');
 
-        this.config = AWSLogsConfig.get();
-        if (this.config == null) {
-            this.config = new AWSLogsConfig();
-        }
+        this.config = new AWSLogsConfig();
     }
 
     @Override
@@ -58,8 +54,21 @@ public class AWSLogsStep extends Step {
         return logStreamName;
     }
 
+    @DataBoundSetter
+    public void setLogStreamName(String logStreamName) {
+        this.logStreamName = logStreamName;
+    }
+
     public AWSLogsConfig getConfig() {
         return config;
+    }
+
+    public void setConfig(AWSLogsConfig config) {
+        this.config = config;
+    }
+
+    public String getAwsRegion() {
+        return this.config.getAwsRegion();
     }
 
     @DataBoundSetter
@@ -67,9 +76,17 @@ public class AWSLogsStep extends Step {
         this.config.setAwsRegion(awsRegion);
     }
 
+    public String getAwsAccessKeyId() {
+        return this.config.getAwsAccessKeyId();
+    }
+
     @DataBoundSetter
     public void setAwsAccessKeyId(String awsAccessKeyId) {
         this.config.setAwsAccessKeyId(awsAccessKeyId);
+    }
+
+    public String getAwsSecretKey() {
+        return this.config.getAwsSecretKey();
     }
 
     @DataBoundSetter
@@ -77,9 +94,13 @@ public class AWSLogsStep extends Step {
         this.config.setAwsSecretKey(awsSecretKey);
     }
 
+    public String getLogGroupName() {
+        return this.logGroupName;
+    }
+
     @DataBoundSetter
     public void setLogGroupName(String logGroupName) {
-        this.config.setLogGroupName(logGroupName);
+        this.logGroupName = logGroupName;
     }
 
     @Extension @Symbol("publish_cloudwatch_logs")
@@ -104,7 +125,7 @@ public class AWSLogsStep extends Step {
         }
 
         @SuppressWarnings("unused")
-        public FormValidation doCheckFile(@QueryParameter String value) {
+        public FormValidation doCheckLogStreamName(@QueryParameter String value) {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("Needs a value");
             } else {
@@ -128,11 +149,37 @@ public class AWSLogsStep extends Step {
             this.step = step;
         }
 
+        /**
+         * Merge global config into our local copy
+         * @return
+         */
+        protected AWSLogsConfig createConfig() {
+            AWSLogsConfig globalConfig = AWSLogsConfig.get();
+            AWSLogsConfig config = step.getConfig();
+            if (config.getAwsRegion() == null) {
+                config.setAwsRegion(globalConfig.getAwsRegion());
+            }
+            if (config.getAwsRegion() == null) {
+                config.setAwsRegion(globalConfig.getAwsRegion());
+            }
+            if (config.getAwsAccessKeyId() == null) {
+                config.setAwsAccessKeyId(globalConfig.getAwsAccessKeyId());
+            }
+            if (config.getAwsSecretKey() == null) {
+                config.setAwsSecretKey(globalConfig.getAwsSecretKey());
+            }
+            config.setLogGroupName(step.getLogGroupName());
+            if (config.getLogGroupName() == null) {
+                config.setLogGroupName(globalConfig.getLogGroupName());
+            }
+            return config;
+        }
+
         @Override
         protected Void run() throws Exception {
             Run run = getContext().get(Run.class);
             PrintStream logger = getContext().get(TaskListener.class).getLogger();
-            final AWSLogsConfig config = step.getConfig();
+            final AWSLogsConfig config = createConfig();
 
             try {
                 AWSLogsHelper.publish(run, config, step.getLogStreamName(), logger);
