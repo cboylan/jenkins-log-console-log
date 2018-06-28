@@ -1,18 +1,21 @@
 package jenkins.plugins.awslogspublisher;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import com.google.common.collect.ImmutableSet;
@@ -22,6 +25,7 @@ import hudson.model.Descriptor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 
 public class AWSLogsStep extends Step {
 
@@ -31,8 +35,7 @@ public class AWSLogsStep extends Step {
     private AWSLogsConfig config;
 
     @DataBoundConstructor
-    public AWSLogsStep(String logStreamName, String logGroupName, String awsRegion, String awsAccessKeyId,
-            String awsSecretKey) throws Descriptor.FormException {
+    public AWSLogsStep(String logStreamName) throws Descriptor.FormException {
 
         if (StringUtils.isEmpty(logStreamName)) {
             throw new Descriptor.FormException("cannot be empty", "logStreamName");
@@ -43,18 +46,6 @@ public class AWSLogsStep extends Step {
         this.config = AWSLogsConfig.get();
         if (this.config == null) {
             this.config = new AWSLogsConfig();
-        }
-        if (StringUtils.isNotEmpty(awsRegion)) {
-            this.config.setAwsRegion(awsRegion);
-        }
-        if (StringUtils.isNotEmpty(awsAccessKeyId)) {
-            this.config.setAwsAccessKeyId(awsAccessKeyId);
-        }
-        if (StringUtils.isNotEmpty(awsSecretKey)) {
-            this.config.setAwsSecretKey(awsSecretKey);
-        }
-        if (StringUtils.isNotEmpty(logGroupName)) {
-            this.config.setLogGroupName(logGroupName);
         }
     }
 
@@ -71,7 +62,27 @@ public class AWSLogsStep extends Step {
         return config;
     }
 
-    @Extension
+    @DataBoundSetter
+    public void setAwsRegion(String awsRegion) {
+        this.config.setAwsRegion(awsRegion);
+    }
+
+    @DataBoundSetter
+    public void setAwsAccessKeyId(String awsAccessKeyId) {
+        this.config.setAwsAccessKeyId(awsAccessKeyId);
+    }
+
+    @DataBoundSetter
+    public void setAwsSecretKey(String awsSecretKey) {
+        this.config.setAwsSecretKey(awsSecretKey);
+    }
+
+    @DataBoundSetter
+    public void setLogGroupName(String logGroupName) {
+        this.config.setLogGroupName(logGroupName);
+    }
+
+    @Extension @Symbol("publish_cloudwatch_logs")
     public static class DescriptorImpl extends StepDescriptor {
 
         public DescriptorImpl() {
