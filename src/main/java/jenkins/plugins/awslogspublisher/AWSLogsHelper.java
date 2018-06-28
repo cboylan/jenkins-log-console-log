@@ -142,39 +142,31 @@ public final class AWSLogsHelper {
         		buffer.setNextSequenceToken(sequenceToken);
         	}
             String line;
-            int count = 0;
-            Long timestamp = System.currentTimeMillis();
+            Long timestamp = build.getStartTimeInMillis();
             while ((line = buffer.readLine()) != null) {
                 // Insert Parameter at top of log
-                if(count == 0){
-					ParametersAction parameters = build.getAction(ParametersAction.class);
-					if (parameters != null && parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
-						buffer.add("Parameters: ", timestamp);
-						for (ParameterValue action : parameters.getParameters()) {
+				ParametersAction parameters = build.getAction(ParametersAction.class);
+				if (parameters != null && parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
+					buffer.add("Parameters: ", timestamp);
+					for (ParameterValue action : parameters.getParameters()) {
 
-							String paramLine = String.format("%s = '%s'", action.getName(),
-									action.isSensitive() ? "*****" : action.getValue());
-							buffer.add(paramLine, timestamp);
-						}
+						String paramLine = String.format("%s = '%s'", action.getName(),
+								action.isSensitive() ? "*****" : action.getValue());
+						buffer.add(paramLine, timestamp);
 					}
-                }
+				}
 
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
+                	// use timestamp from timestamper plugin output
                     timestamp = DATE_FORMAT.get().parse(line.substring(0, matcher.end())).getTime();
                     line = line.substring(matcher.end() + 2);
-
                 } else {
-                    if (count > 100) {
-                        timestamp = System.currentTimeMillis();
-                        count = 0;
-                    }
+                	// use previous timestamp
                     line = line.trim();
-
                 }
 
                 buffer.add(line, timestamp);
-                count++;
             }
 
         } catch (ParseException e) {
