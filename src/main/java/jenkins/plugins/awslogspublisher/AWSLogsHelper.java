@@ -143,18 +143,22 @@ public final class AWSLogsHelper {
         	}
             String line;
             Long timestamp = build.getStartTimeInMillis();
+            boolean parameterAdded = false;
             while ((line = buffer.readLine()) != null) {
                 // Insert Parameter at top of log
-				ParametersAction parameters = build.getAction(ParametersAction.class);
-				if (parameters != null && parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
-					buffer.add("Parameters: ", timestamp);
-					for (ParameterValue action : parameters.getParameters()) {
+                if(!parameterAdded) {
+                    ParametersAction parameters = build.getAction(ParametersAction.class);
+                    if (parameters != null && parameters.getParameters() != null && !parameters.getParameters().isEmpty()) {
+                        buffer.add("Parameters: ", timestamp);
+                        for (ParameterValue action : parameters.getParameters()) {
 
-						String paramLine = String.format("%s = '%s'", action.getName(),
-								action.isSensitive() ? "*****" : action.getValue());
-						buffer.add(paramLine, timestamp);
-					}
-				}
+                            String paramLine = String.format("%s = '%s'", action.getName(),
+                                    action.isSensitive() ? "*****" : action.getValue());
+                            buffer.add(paramLine, timestamp);
+                        }
+                    }
+                    parameterAdded = true;
+                }
 
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
