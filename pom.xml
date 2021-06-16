@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>aws-cloudwatch-logs-publisher</artifactId>
-  <version>1.2.1-SNAPSHOT</version>
+  <version>1.2.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>AWS CloudWatch Logs Publisher</name>
   <description>Publishes build logs to Amazon CloudWatch Logs.</description>
