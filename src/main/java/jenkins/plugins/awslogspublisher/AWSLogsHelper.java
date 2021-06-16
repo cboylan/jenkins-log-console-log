@@ -37,6 +37,7 @@ public final class AWSLogsHelper {
 
     private static final String QUERY = "time=yyyy-MM-dd.HH:mm:ss&timeZone=UTC&appendLog";
     private static final Pattern PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2}");
+    private static final Pattern ANSICOLOR = Pattern.compile("\u001b\\[[0-9;]*m");
 
     private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -48,9 +49,13 @@ public final class AWSLogsHelper {
     };
 
     static String publish(Run build, final AWSLogsConfig config, String logStreamName, PrintStream logger) {
+        return publish(build, config, logStreamName, logger, false);
+    }
+
+    static String publish(Run build, final AWSLogsConfig config, String logStreamName, PrintStream logger, boolean stripANSIColor) {
 
         try {
-            return pushToAWSLogs(build, getAwsLogsClient(config), config.getLogGroupName(), logStreamName, logger);
+            return pushToAWSLogs(build, getAwsLogsClient(config), config.getLogGroupName(), logStreamName, logger, stripANSIColor);
 
         } catch (InterruptedException | IOException e) {
             build.setResult(Result.UNSTABLE);
@@ -128,7 +133,7 @@ public final class AWSLogsHelper {
     	return null;
     }
 
-    private static String pushToAWSLogs(Run build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger)
+    private static String pushToAWSLogs(Run build, AWSLogs awsLogsClient, String logGroupName, String logStreamName, PrintStream logger, boolean stripANSIColor)
             throws IOException, InterruptedException {
 
         if (Strings.isNullOrEmpty(logStreamName)) {
@@ -160,6 +165,9 @@ public final class AWSLogsHelper {
                     parameterAdded = true;
                 }
 
+                if (stripANSIColor)
+                    line = stripANSIColor(line);
+
                 Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
                 	// use timestamp from timestamper plugin output
@@ -181,6 +189,10 @@ public final class AWSLogsHelper {
 
         return logStreamName;
 
+    }
+
+    private static String stripANSIColor(String content) {
+        return ANSICOLOR.matcher(content).replaceAll("");
     }
 
     public static String getBuildSpec(Run build) {

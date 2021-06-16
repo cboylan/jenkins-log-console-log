@@ -27,8 +27,9 @@ public class AWSLogsPublisher extends Recorder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public AWSLogsPublisher(String logStreamName) {
+    public AWSLogsPublisher(String logStreamName, boolean stripANSIColor) {
         this.logStreamName = logStreamName;
+        this.stripANSIColor = stripANSIColor;
     }
 
     private String logStreamName;
@@ -41,6 +42,16 @@ public class AWSLogsPublisher extends Recorder {
         return logStreamName;
     }
 
+    private boolean stripANSIColor;
+
+    public void setStripANSIColor(@CheckForNull boolean stripANSIColor) {
+        this.stripANSIColor = stripANSIColor;
+    }
+
+    public boolean getStripANSIColor() {
+        return this.stripANSIColor;
+    }
+
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.BUILD;
     }
@@ -50,14 +61,14 @@ public class AWSLogsPublisher extends Recorder {
      */
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        showStreamInfo(build, listener, build.getEnvironment(listener).expand(logStreamName));
+        showStreamInfo(build, listener, build.getEnvironment(listener).expand(logStreamName), this.stripANSIColor);
         return true;
     }
 
-    private static void showStreamInfo(AbstractBuild build, BuildListener listener, String configuredLogStreamName) {
+    private static void showStreamInfo(AbstractBuild build, BuildListener listener, String configuredLogStreamName, boolean stripANSIColor) {
         final AWSLogsConfig config = AWSLogsConfig.get();
         PrintStream logger = listener.getLogger();
-        final String logStreamName = AWSLogsHelper.publish(build, config, configuredLogStreamName, logger);
+        final String logStreamName = AWSLogsHelper.publish(build, config, configuredLogStreamName, logger, stripANSIColor);
         if (logStreamName == null) {
             return;
         }

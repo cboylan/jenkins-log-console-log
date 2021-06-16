@@ -28,5 +28,8 @@ THE SOFTWARE.
     <f:entry title="${%Log stream name}" field="logStreamName">
       <f:textbox/>
     </f:entry>
+    <f:entry title="${%Strip ANSI Color}" field="stripANSIColor">
+      <f:checkbox/>
+    </f:entry>
   </f:section>
 </j:jelly>

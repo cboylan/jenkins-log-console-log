@@ -30,6 +30,7 @@ public class AWSLogsStep extends Step {
     private static Logger LOGGER = Logger.getLogger(AWSLogsStep.class.getName());
 
     private String logStreamName;
+    private boolean stripANSIColor = false;
     private String logGroupName;
     private AWSLogsConfig config;
 
@@ -101,6 +102,15 @@ public class AWSLogsStep extends Step {
     @DataBoundSetter
     public void setLogGroupName(String logGroupName) {
         this.logGroupName = logGroupName;
+    }
+
+    @DataBoundSetter
+    public void setStripANSIColor(boolean stripANSIColor) {
+        this.stripANSIColor = stripANSIColor;
+    }
+
+    public boolean getStripANSIColor() {
+        return this.stripANSIColor;
     }
 
     @Extension @Symbol("publish_cloudwatch_logs")
@@ -182,7 +192,7 @@ public class AWSLogsStep extends Step {
             final AWSLogsConfig config = createConfig();
 
             try {
-                AWSLogsHelper.publish(run, config, step.getLogStreamName(), logger);
+                AWSLogsHelper.publish(run, config, step.getLogStreamName(), logger, step.getStripANSIColor());
             } catch (Exception ex) {
                 LOGGER.warning("failed to publish logs to cloudwatch: " + ex.getMessage());
             }
