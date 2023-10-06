@@ -8,6 +8,19 @@ only reads files to do its work.
 
 It is available as a build-step and as a post-build action.
 
+## Usage
+
+The plugin is not yet in the Jenkins plugin store. Download the .hpi file
+from the release archive and add it to your Jenkins server manually.
+
+To use it in declarative pipeline:
+
+    steps {
+        step([$class: 'ConsoleLogToWorkspaceBuildStep', fileName: './consoleLog.txt', writeConsoleLog: true, blockOnAllOutput: true])
+    }
+
+## Development
+
 To build the plugin, install maven and jdk (java-development-kit) and run:
 
     mvn package
