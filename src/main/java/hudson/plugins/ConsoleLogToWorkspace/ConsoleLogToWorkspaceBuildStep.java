@@ -1,33 +1,34 @@
 package hudson.plugins.ConsoleLogToWorkspace;
 
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Publisher;
-import hudson.tasks.Recorder;
+import hudson.tasks.Builder;
+
 import hudson.util.FormValidation;
+
+import jenkins.tasks.SimpleBuildStep;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import javax.servlet.ServletException;
+import javax.annotation.Nonnull;
 
-
-public class ConsoleLogToWorkspacePublisher extends Recorder {
+public class ConsoleLogToWorkspaceBuildStep extends Builder implements SimpleBuildStep {
 
     private final String fileName;
     private final boolean writeConsoleLog;
     private final boolean blockOnAllOutput;
 
-    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public ConsoleLogToWorkspacePublisher(String fileName, boolean writeConsoleLog, boolean blockOnAllOutput) {
+    public ConsoleLogToWorkspaceBuildStep(String fileName, boolean writeConsoleLog, boolean blockOnAllOutput) {
         this.fileName = fileName;
         this.writeConsoleLog = writeConsoleLog;
         this.blockOnAllOutput = blockOnAllOutput;
@@ -36,7 +37,6 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.NONE;
     }
-
 
     public String getFileName() {
         return fileName;
@@ -50,12 +50,10 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
         return blockOnAllOutput;
     }
 
-    /**
-     * Actually publish the Console Logs to the workspace.
-     */
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        return ConsoleLogToWorkspace.perform(build, build.getWorkspace(), listener,
+    public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace,
+            @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        ConsoleLogToWorkspace.perform(build, workspace, listener,
             writeConsoleLog, fileName, blockOnAllOutput);
     }
 
@@ -64,19 +62,15 @@ public class ConsoleLogToWorkspacePublisher extends Recorder {
         return (DescriptorImpl)super.getDescriptor();
     }
 
-
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        /**
-         * This human readable name is used in the configuration screen.
-         */
         public String getDisplayName() {
             return "Write Console Log to Workspace";
         }
 
         /**
-         * Performs on-the-fly validation of the form field 'name'.
+         * Performs on-the-fly validation of the form field 'fileName'.
          *
          * @param value
          *      This parameter receives the value that the user has typed.
